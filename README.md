@@ -1,112 +1,158 @@
-# PTA – Servidor TCP de transferência de arquivos
+# Servidor PTA
 
-Implementação do servidor do Protocolo de Transferência de Arquivos (PTA) descrito em `pta.pdf`, desenvolvida em Python.
+Implementação do servidor do Protocolo de Transferência de Arquivos (PTA), desenvolvido em Python para a atividade da disciplina.
+
+O servidor utiliza TCP na porta 11550 e implementa os comandos de autenticação (`CUMP`), listagem de arquivos (`LIST`), transferência de arquivos (`PEGA`) e encerramento da conexão (`TERM`), conforme a especificação disponível em `pta.pdf`.
 
 ## Requisitos
 
-- Python **3.9 ou superior** (3.10, 3.11, 3.12 e 3.13 também são adequados).
-- Somente bibliotecas padrão do Python (`socket`, `socketserver`, `pathlib`, `select`, `argparse`). **Não exige `pip install`.**
-- Git para clonar/publicar o fork (não necessário para executar o servidor).
-- A porta TCP **11550** deve estar disponível.
+* Python 3.9 ou superior.
+* Porta TCP 11550 disponível.
+* Arquivos `users.txt` e diretório `files/` fornecidos no repositório original.
 
-## Estrutura no fork do professor
+O projeto utiliza apenas bibliotecas padrão do Python, portanto não é necessário instalar dependências adicionais.
 
-Os arquivos originais `pta.pdf`, `pta-client.py`, `pta-server/users.txt` e TODO o conteúdo de `pta-server/files/` devem ser preservados, sem substituições.
+## Estrutura do projeto
+
+Os arquivos originais do repositório foram mantidos. O código do servidor está localizado em `pta-server/pta-server.py`.
 
 ```text
 pta/
-├── pta.pdf                    [original]
-├── pta-client.py              [original]
-├── README.md                  [original]
-├── README_PTA.md              [adicionado]
-├── testes_pta.py              [adicionado]
+├── pta.pdf
+├── pta-client.py
+├── README.md
+├── testes_pta.py
 └── pta-server/
-    ├── pta-server.py          [adicionado]
-    ├── users.txt              [original]
-    └── files/                 [original; não modificar]
+    ├── pta-server.py
+    ├── users.txt
+    └── files/
 ```
 
-O servidor encontra os caminhos de `users.txt` e `files/` relativos ao script, de modo que pode ser executado de qualquer diretório.
+O arquivo `users.txt` contém os usuários autorizados a acessar o servidor. Já o diretório `files/` contém os arquivos disponibilizados para download.
 
-## Execução local
+## Como executar
 
-Abra um terminal na raiz do fork (`pta/`) e execute:
+Abra um terminal na pasta principal do projeto.
 
-**Windows (PowerShell):**
+No Windows (PowerShell):
 
 ```powershell
 py -3 pta-server/pta-server.py
 ```
 
-**Linux/macOS:**
+No Linux ou macOS:
 
 ```bash
 python3 pta-server/pta-server.py
 ```
 
-O servidor imprime o endereço de escuta e mantém o processo rodando. Por padrão, escuta em `0.0.0.0:11550` (todas as interfaces). Para limitar apenas à máquina local: `--host 127.0.0.1`. Encerre com **Ctrl+C**.
+O servidor será iniciado na porta 11550 e permanecerá aguardando conexões. Para encerrar, utilize `Ctrl+C`.
 
-## Teste com o cliente original do professor
+Por padrão, o servidor escuta em `0.0.0.0`, permitindo conexões pelas interfaces de rede disponíveis. Para executar apenas localmente, utilize:
 
-**Não feche o terminal do servidor.** Abra **outro terminal**, também na raiz do fork, e execute:
+```powershell
+py -3 pta-server/pta-server.py --host 127.0.0.1
+```
 
-**Windows:**
+## Como testar
+
+### Cliente fornecido pelo professor
+
+Com o servidor em execução, abra outro terminal na pasta principal do projeto.
+
+No Windows:
 
 ```powershell
 py -3 pta-client.py 127.0.0.1 11550 user1
 ```
 
-**Linux/macOS:**
+No Linux ou macOS:
 
 ```bash
 python3 pta-client.py 127.0.0.1 11550 user1
 ```
 
-`user1` é uma das entradas de `pta-server/users.txt` do repositório consultado. Substitua pelo nome literal de algum usuário realmente presente em seu fork, se necessário.
+O último argumento corresponde ao usuário utilizado na autenticação. Caso necessário, substitua `user1` por um usuário presente em `pta-server/users.txt`.
 
-A linha final esperada no cliente é **`Points: 6/6`**, seguida da mensagem **`TERM is OK!`**. O cliente original **salva o arquivo baixado no diretório atual**: confira `git status` e não adicione esse arquivo gerado ao commit acidentalmente. O cliente original lê os bytes do arquivo como texto e pode falhar em arquivos binários ou incompatíveis com UTF-8, embora o servidor envie os bytes corretamente; nesse caso, use os testes adicionais abaixo.
-
-## Testes extras automatizados
-
-Com o servidor original ainda em execução ou não, execute na raiz do fork:
-
-**Windows:** `py -3 testes_pta.py`
-
-**Linux/macOS:** `python3 testes_pta.py`
-
-Os testes adicionais **iniciam outro servidor em uma porta temporária**, criam usuários e arquivos em um diretório temporário e NÃO alteram `pta-server/users.txt` nem `pta-server/files/`. Verificam autenticação, caixa das letras, listagem, download binário e vazio, arquivo inexistente, proteção contra caminhos relativos, ordem de sequência, erros de formato, estados, fechamento, conexões simultâneas e segmento TCP fragmentado.
-
-O resultado esperado é `Ran 14 tests` e `OK`.
-
-## Exemplos das mensagens de protocolo
+O resultado esperado, caso todos os testes do cliente sejam aprovados, é:
 
 ```text
-Cliente -> 10 CUMP user1
-Servidor -> 10 OK
-Cliente -> 11 LIST
-Servidor -> 11 ARQS 2 exemplo.txt,outro.txt
-Cliente -> 12 PEGA exemplo.txt
-Servidor -> 12 ARQ 5 hello        (5 bytes exatos após o espaço)
-Cliente -> 13 PEGA inexistente.txt
-Servidor -> 13 NOK
-Cliente -> 14 TERM
-Servidor -> 14 OK                (servidor fecha a conexão)
+Points: 6/6
+TERM is OK!
 ```
 
-As respostas `ARQ` possuem corpo binário: não acrescente uma quebra de linha após o conteúdo do arquivo. O contador de tamanho deve refletir os **bytes**, e não os caracteres. Após `CUMP` falho, o servidor envia `NOK` e fecha a conexão; após comandos inválidos em estado autenticado, responde `NOK` e continua aberto.
+O cliente pode salvar arquivos baixados no diretório atual. Antes de enviar as alterações ao GitHub, verifique se algum arquivo foi gerado durante os testes.
 
-## Observação sobre o enquadramento TCP
+### Testes adicionais
 
-O documento especifica o formato dos campos, mas não define terminador ou tamanho para a **requisição**. O cliente original envia cada pedido sem `\n` e aguarda a resposta antes do próximo. Esta implementação acumula fragmentos recebidos e considera o pedido completo após 50 ms sem novos bytes; admite também `\r\n` no fim do pedido. Consequentemente, **não suporta requisições simultâneas/pipelined na mesma conexão**, nem pode garantir o enquadramento correto caso o cliente faça pausas superiores a esse intervalo no meio de uma requisição. A limitação decorre da ausência de um delimitador no protocolo especificado; o cliente fornecido segue o padrão request/response sequencial.
+Também foi criado o arquivo `testes_pta.py`, com testes automatizados para verificar o funcionamento do servidor.
 
-## Publicação no GitHub
+Execute na pasta principal do projeto:
 
-1. Acesse <https://github.com/glaucogoncalves/pta> e clique em **Fork**.
-2. Clone **o seu fork** com `git clone https://github.com/SEU_USUARIO/pta.git` e entre na pasta com `cd pta`.
-3. Copie `pta-server/pta-server.py`, `README_PTA.md` e `testes_pta.py` deste pacote para os caminhos equivalentes em seu fork. **Não substitua arquivos originais do professor.**
-4. Teste localmente conforme instruções anteriores.
-5. Use `git status` para conferir somente os arquivos pretendidos.
-6. Execute `git add pta-server/pta-server.py README_PTA.md testes_pta.py`, `git commit -m "Implementa servidor PTA"` e `git push origin master` (ou a branch padrão do seu fork).
-7. Copie o link do **seu fork**, e não o repositório do professor, e envie-o no SIGAA.
+```powershell
+py -3 testes_pta.py
+```
 
-Opcionalmente, execute com flags `--port`, `--host`, `--users` e `--files` para testar configurações diferentes. Na avaliação com os arquivos originais, basta executar o script sem flags.
+Os testes utilizam uma instância separada do servidor, em uma porta temporária, e não modificam os arquivos originais do repositório.
+
+São verificados os seguintes casos:
+
+* Autenticação de usuários válidos e inválidos.
+* Diferenciação entre letras maiúsculas e minúsculas.
+* Listagem e transferência de arquivos.
+* Transferência de arquivos binários e vazios.
+* Tratamento de arquivos inexistentes e comandos inválidos.
+* Validação dos números de sequência.
+* Encerramento da conexão e atendimento de múltiplos clientes.
+* Recebimento de uma requisição dividida em fragmentos TCP.
+
+O resultado esperado é:
+
+```text
+Ran 14 tests
+
+OK
+```
+
+## Funcionamento do protocolo
+
+As mensagens enviadas pelo cliente seguem o formato:
+
+```text
+SEQ_NUM COMMAND ARGS
+```
+
+O número de sequência é definido inicialmente pelo cliente e incrementado a cada nova requisição. O servidor utiliza esse mesmo número na resposta.
+
+Exemplo de comunicação:
+
+```text
+Cliente:  10 CUMP user1
+Servidor: 10 OK
+
+Cliente:  11 LIST
+Servidor: 11 ARQS 2 exemplo.txt,outro.txt
+
+Cliente:  12 PEGA exemplo.txt
+Servidor: 12 ARQ 5 hello
+
+Cliente:  13 PEGA inexistente.txt
+Servidor: 13 NOK
+
+Cliente:  14 TERM
+Servidor: 14 OK
+```
+
+No comando `PEGA`, o servidor informa o tamanho do arquivo em bytes e envia seu conteúdo em seguida. Os arquivos são lidos em modo binário para preservar os dados originais.
+
+O cliente precisa se autenticar antes de utilizar os demais comandos. Uma apresentação inválida resulta em `NOK` e no fechamento da conexão. Após a autenticação, comandos inválidos recebem `NOK`, mas a conexão permanece aberta.
+
+O comando `TERM` encerra a sessão após o envio da resposta `OK`.
+
+## Observações
+
+O protocolo não define um delimitador ou campo de tamanho para as mensagens de requisição. Nesta implementação, o servidor acumula os dados recebidos e considera a requisição completa após um intervalo de 50 ms sem novos bytes.
+
+Essa abordagem atende ao modelo de comunicação sequencial utilizado pelo cliente fornecido, mas não oferece suporte a múltiplas requisições simultâneas na mesma conexão. Pausas maiores que esse intervalo durante o envio de uma mensagem também podem comprometer sua interpretação.
+
+Para utilizar configurações diferentes, o servidor aceita os argumentos `--host`, `--port`, `--users` e `--files`. Na execução padrão, não é necessário informar nenhum deles.
