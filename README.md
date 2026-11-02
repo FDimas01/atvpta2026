@@ -1,3 +1,5 @@
+# Aluno: Fernando Farias Dimas
+
 # Servidor PTA
 
 Implementação do servidor do Protocolo de Transferência de Arquivos (PTA), desenvolvido em Python para a atividade da disciplina.
